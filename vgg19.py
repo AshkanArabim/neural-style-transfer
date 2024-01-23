@@ -32,14 +32,14 @@ class Vgg19(nn.Module):
         for n in range(20, 22):
             self.until_conv4_2.append(self.baselayers[n])
         for n in range(22, 29):
-            self.until_conv5_1.append(self.baselayers[n])        
-    
+            self.until_conv5_1.append(self.baselayers[n])
+        
     def forward(self, x):
         style_1 = self.until_conv1_1(x)
         style_2 = self.until_conv2_1(style_1)
         style_3 = self.until_conv3_1(style_2)
         style_4 = self.until_conv4_1(style_3)
-        content_rep = self.until_conv4_1(style_4)
+        content_rep = self.until_conv4_2(style_4)
         style_5 = self.until_conv5_1(content_rep)
         
         style_reps = (style_1, style_2, style_3, style_4, style_5)
