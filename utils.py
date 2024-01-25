@@ -52,7 +52,7 @@ def prepare_image(image_folder, image_name, device):
     return (image, dims)
 
 
-def calculate_loss(out_style_rep, out_content_rep, style_rep, content_rep, configs):
+def calculate_loss(output_image, out_style_rep, out_content_rep, style_rep, content_rep, configs):
     # get the content loss
     content_loss = torch.nn.MSELoss(reduction='mean')(out_content_rep, content_rep)
     
@@ -73,13 +73,21 @@ def calculate_loss(out_style_rep, out_content_rep, style_rep, content_rep, confi
         style_loss += torch.nn.MSELoss(reduction='mean')(out_style_gram, src_style_gram)
     style_loss /= len(style_rep)
     
-    # variation loss: we'll see...
+    # variance loss: absolutely needed
+    variance_loss = 0
+    variance_loss += torch.nn.MSELoss(reduction='mean')(
+        output_image[1:, :], output_image[:-1, :] # vertical diff
+    )
+    variance_loss += torch.nn.MSELoss(reduction='mean')(
+        output_image[:, 1:], output_image[:, :-1] # horizontal diff
+    )
     
     # add together and apply style / content weights
     total_loss = content_loss * configs["content_loss_weight"] + \
-        style_loss * configs["style_loss_weight"]
+        style_loss * configs["style_loss_weight"] + \
+        variance_loss * configs["variance_loss_weight"]
     
-    return (content_loss, style_loss, total_loss)
+    return (variance_loss, content_loss, style_loss, total_loss)
 
     
 def gram_matrix(matrix):
