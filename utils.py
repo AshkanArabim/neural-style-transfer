@@ -3,6 +3,7 @@ import torchvision
 import numpy as np
 import os
 import cv2 as cv
+import matplotlib.pyplot as plt
 
 
 imagenet_mean = [0.485, 0.456, 0.406]
@@ -51,20 +52,26 @@ def prepare_image(image_folder, image_name, device):
     return (image, dims)
 
 
-def calculate_loss(out_style_reps, out_content_rep, style_reps, content_rep, configs):
+def calculate_loss(out_style_rep, out_content_rep, style_rep, content_rep, configs):
     # get the content loss
     content_loss = torch.nn.MSELoss(reduction='mean')(out_content_rep, content_rep)
     
     # STOP AND THINK vv
-    # the the style loss
+    # the style loss
     style_loss = 0
-    for i in range(len(out_style_reps)):
+    for i in range(len(out_style_rep)):
         # don't forget gram matrix
-        style_loss += torch.nn.MSELoss(reduction='mean')(
-            gram_matrix(out_style_reps[i]),
-            gram_matrix(style_reps[i])
-        )
-    style_loss /= len(style_reps)
+        out_style_gram = gram_matrix(out_style_rep[i])
+        src_style_gram = gram_matrix(style_rep[i])
+        
+        # show images of style and content reps
+        if (configs['save_reps']):
+            with torch.no_grad():
+                draw_matrix(src_style_gram, f"src_style_gram_{i}.jpg")
+                draw_matrix(out_style_gram, f"out_style_gram_{i}.jpg")
+        
+        style_loss += torch.nn.MSELoss(reduction='mean')(out_style_gram, src_style_gram)
+    style_loss /= len(style_rep)
     
     # variation loss: we'll see...
     
@@ -72,7 +79,7 @@ def calculate_loss(out_style_reps, out_content_rep, style_reps, content_rep, con
     total_loss = content_loss * configs["content_loss_weight"] + \
         style_loss * configs["style_loss_weight"]
     
-    return total_loss
+    return (content_loss, style_loss, total_loss)
 
     
 def gram_matrix(matrix):
@@ -83,3 +90,12 @@ def gram_matrix(matrix):
     gram /= h * w
     
     return gram
+
+
+def draw_matrix(style_rep, name):
+    # style_rep = [np.asarray(x.to('cpu')) for x in style_rep]
+    style_rep = np.asarray(style_rep.to('cpu'))
+    
+    # for now I don't care which one
+    plt.imshow(style_rep, interpolation='none')
+    plt.savefig(name)
