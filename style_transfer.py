@@ -18,7 +18,10 @@ def style_transfer(configs):
     _, content_rep = neural_net(content_image)
     
     # initialize output image (random pixels) --> we will tune this
-    output_image = torch.from_numpy(np.random.rand(*content_dims))
+    output_image = torch.from_numpy(np.random.rand(
+        content_dims[0] // 6, content_dims[1] // 6, content_dims[2]
+    ))
+    # output_image = torch.from_numpy(np.random.rand(*[dim // 6 for dim in content_dims]))
     output_image = torch.autograd.Variable(output_image, requires_grad=True)
     
     # train the output image
@@ -45,19 +48,18 @@ def style_transfer(configs):
     )
     print('saved to:', configs["output_name"])
 
-
 if __name__ == "__main__":
     # you can tweak these vv
     configs = {
         "save_reps": False, # breaks algorithm, but you'll get initial pics
         "style_image_name": "vg_self.jpg",
         "content_image_name": "my_pic.jpg",
-        "style_loss_weight": 1,
-        "content_loss_weight": 1,
-        "variance_loss_weight": 1,
-        "max_iters": 100, # FIXME: revert to 1000 for final training
+        "style_loss_weight": 10,
+        "content_loss_weight": 100,
+        "variance_loss_weight": 100,
+        "max_iters": 1000, # FIXME: revert to 1000 for final training
         # don't tweak below this line -------------
-        "output_name": "out.jpg",
+        # "output_name": "out.jpg",
         # "output_dir": os.path.join(os.path.dirname(__file__), "output"),
         "style_images_dir": os.path.join(os.path.dirname(__file__), "style_images"),
         "content_images_dir": os.path.join(os.path.dirname(__file__), "content_images"),
@@ -67,5 +69,7 @@ if __name__ == "__main__":
             else "cpu"
         )
     }
+    
+    configs["output_name"] = f"[reduced-size-output]style{configs['style_loss_weight']}-content{configs['content_loss_weight']}-var{configs['variance_loss_weight']}-epochs{configs['max_iters']}.jpg"
     
     style_transfer(configs)
